@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>URL Shortener</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f5f7fa;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    .card {
+      background: #fff;
+      padding: 30px;
+      border-radius: 10px;
+      width: 400px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+    h2 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    input {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 15px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+    button {
+      width: 100%;
+      padding: 10px;
+      background: #4f46e5;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #4338ca;
+    }
+    .result {
+      margin-top: 20px;
+      text-align: center;
+      word-break: break-all;
+    }
+    a {
+      color: #4f46e5;
+      text-decoration: none;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>URL Shortener</h2>
+    <input id="longUrl" type="text" placeholder="Enter long URL" />
+    <button onclick="shortenUrl()">Shorten URL</button>
+    <div class="result" id="result"></div>
+  </div>
+
+  <script>
+    async function shortenUrl() {
+      const longUrl = document.getElementById("longUrl").value;
+      const resultDiv = document.getElementById("result");
+
+      if (!longUrl) {
+        resultDiv.innerHTML = "Please enter a URL";
+        return;
+      }
+
+      try {
+        const response = await fetch(`/shorten?long_url=${encodeURIComponent(longUrl)}`, {
+          method: "POST"
+        });
+
+        const data = await response.json();
+        resultDiv.innerHTML = `Short URL:<br/><a href="${data.short_url}" target="_blank">${data.short_url}</a>`;
+      } catch (err) {
+        resultDiv.innerHTML = "Error creating short URL";
+      }
+    }
+  </script>
+</body>
+</html>
