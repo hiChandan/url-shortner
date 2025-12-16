@@ -1,3 +1,4 @@
+import secrets
 from fastapi import FastAPI
 from app.database import collection
 import random
@@ -8,20 +9,21 @@ from fastapi.responses import RedirectResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from app.database import collection
 from datetime import datetime
-import random, string
-
+import random
+import string
+from datetime import datetime, timedelta
+from app.database import collection, redis_client
 
 app = FastAPI()
 
 # Serve static files
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
+
 @app.get("/")
 def home():
     return FileResponse("static/index.html")
 
-import secrets
-import string
 
 def generate_short_code(length=7):
     chars = string.ascii_letters + string.digits
@@ -29,14 +31,37 @@ def generate_short_code(length=7):
 
 
 @app.post("/shorten")
-def shorten_url(long_url: str):
-    code = generate_short_code()
-    collection.insert_one({"code": code, "url": long_url})
-    return {"short_url": f"http://localhost:8000/{code}"}
+def shorten_url(long_url: str, days_valid: int = 7):
+    expires_at = datetime.utcnow() + timedelta(days=days_valid)
 
-@app.get("/{code}")
-def redirect_url(code: str):
-    data = collection.find_one({"code": code})
+    while True:
+        try:
+            code = generate_short_code()
+            collection.insert_one({
+                "short_code": code,
+                "long_url": long_url,
+                "created_at": datetime.utcnow(),
+                "expires_at": expires_at
+            })
+            return {
+                "short_code": code,
+                "expires_at": expires_at
+            }
+        except Exception:
+            continue
+
+
+@app.get("/{short_code}")
+def redirect(short_code: str):
+    cached_url = redis_client.get(short_code)
+    if cached_url:
+        return RedirectResponse(cached_url, status_code=307)
+
+    data = collection.find_one({"short_code": short_code})
     if not data:
-        return {"error": "URL not found"}
-    return {"original_url": data["url"]}
+        raise HTTPException(
+            status_code=404, detail="Link expired or not found")
+
+    redis_client.setex(short_code, 3600, data["long_url"])
+
+    return RedirectResponse(data["long_url"], status_code=307)

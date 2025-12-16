@@ -1,4 +1,4 @@
-#!/home/chandan/hiChandan/url-shortner/venv/bin/python3
+#!/Users/chandan.chauhan/data/DSA/url-shortner/url-shortner/venv/bin/python
 # -*- coding: utf-8 -*-
 import re
 import sys
